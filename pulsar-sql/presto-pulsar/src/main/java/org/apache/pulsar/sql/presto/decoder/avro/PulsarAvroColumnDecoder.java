@@ -112,6 +112,7 @@ public class PulsarAvroColumnDecoder {
                     "mapping not defined for column '%s'", columnName);
             checkArgument(isSupportedType(columnType),
                     "Unsupported column type '%s' for column '%s'", columnType, columnName);
+
         } catch (IllegalArgumentException e) {
             throw new TrinoException(GENERIC_USER_ERROR, e);
         }
