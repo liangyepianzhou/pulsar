@@ -1281,6 +1281,7 @@ public class ManagedCursorImpl implements ManagedCursor {
                     && !forceReset) {
                 actualPosition = ledger.getNextValidPosition(actualPosition);
 
+
                 if (actualPosition == null) {
                     // next valid position would only return null when newPos
                     // is larger than all available positions, then it's latest in effect.
