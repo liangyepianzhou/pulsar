@@ -41,6 +41,7 @@ public class BkEnsemblesChaosTest extends CanReconnectZKClientPulsarServiceBaseT
 
     @Test
     public void testBookieInfoIsCorrectEvenIfLostNotificationDueToZKClientReconnect() throws Exception {
+
         final String topicName = BrokerTestUtil.newUniqueName("persistent://" + defaultNamespace + "/tp_");
         final byte[] msgValue = "test".getBytes();
         admin.topics().createNonPartitionedTopic(topicName);
