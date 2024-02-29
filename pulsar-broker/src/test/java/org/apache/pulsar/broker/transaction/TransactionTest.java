@@ -172,6 +172,7 @@ public class TransactionTest extends TransactionTestBase {
         }
         topicName = MLPendingAckStore.getTransactionPendingAckStoreSuffix(topicName, subName);
 
+
         // getList does not include transaction system topic
         List<String> list = admin.topics().getList(NAMESPACE1);
         assertEquals(list.size(), 4);
