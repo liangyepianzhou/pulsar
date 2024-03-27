@@ -156,6 +156,8 @@ If the users cannot tolerate message repetition, they can acknowledge messages w
 prevent repeated consumption. If a message has been acknowledged, it will wait for a response and throw 
 `TransactionConflictException` when the client acknowledges the message with a transaction.
 
+**Notices:** When using transactions, do not configure DeadLetterPolicy, but instead use negativeAcknowledge to resend messages.
+
 ```java
         Consumer<Integer> consumer = pulsarClient.newConsumer(Schema.INT32)
                 .ackTimeout(tiemout, timeunit)
