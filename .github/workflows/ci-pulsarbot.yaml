@@ -34,7 +34,7 @@ jobs:
     steps:
       - name: Execute pulsarbot command
         id: pulsarbot
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -61,7 +61,7 @@ jobs:
             const arg = parts.length > 2 ? parts.slice(2).join(' ') : '';
             const supported = ['rerun', 'stop', 'cancel', 'rerun-failure-checks'];
             if (!supported.includes(sub)) {
-              console.log(`Unsupported command '${sub}'. Supported: '/pulsarbot rerun [jobName?]', '/pulsarbot stop', '/pulsarbot cancel'.`);
+              console.log(`Unsupported command '${sub}'. Supported: ${supported.map(cmd => `'/pulsarbot ${cmd}'`).join(', ')}.`);
               return;
             }
             const prNum = context.payload.issue.number;
@@ -148,19 +148,11 @@ jobs:
             // Utility: rerun a single job
             async function rerunJob(job, run) {
               try {
-                if (github.rest.actions.reRunJobForWorkflowRun) {
-                  await github.rest.actions.reRunJobForWorkflowRun({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    job_id: job.id
-                  });
-                } else {
-                  await github.request('POST /repos/{owner}/{repo}/actions/jobs/{job_id}/rerun', {
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    job_id: job.id
-                  });
-                }
+                await github.rest.actions.reRunJobForWorkflowRun({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  job_id: job.id
+                });
                 console.log(`Re-ran job '${job.name}' (job_id=${job.id}) in run '${run.name}' | ${run.html_url}`);
                 return true;
               } catch (e) {
@@ -171,10 +163,10 @@ jobs:
             // Command 1: /pulsarbot rerun
             if ((sub === 'rerun' || sub === 'rerun-failure-checks') && !arg) {
               const targetConclusions = new Set(['failure', 'timed_out', 'cancelled', 'skipped']);
-              let fullRerunCount = 0;
+              let rerunCount = 0;
               let skippedRunning = 0;
               let skippedConclusion = 0;
-              console.log('Mode: full workflow re-run for completed runs with conclusions in [failure,timed_out,cancelled,skipped].');
+              console.log('Mode: workflow re-run for completed runs with conclusions in [failure,timed_out,cancelled,skipped].');
               for (const r of latestRuns) {
                 if (r.status !== 'completed') {
                   console.log(`Skip (still running) ${runKey(r)}. Cannot re-run whole workflow. Consider '/pulsarbot rerun <jobName>' for single job.`);
@@ -187,21 +179,21 @@ jobs:
                   continue;
                 }
                 try {
-                  await github.rest.actions.reRunWorkflow({
+                  await github.rest.actions.reRunWorkflowFailedJobs({
                     owner: context.repo.owner,
                     repo: context.repo.repo,
                     run_id: r.id
                   });
-                  console.log(`Triggered full re-run for ${runKey(r)}`);
-                  fullRerunCount++;
+                  console.log(`Triggered re-run for ${runKey(r)}`);
+                  rerunCount++;
                 } catch (e) {
-                  console.log(`Failed to trigger full re-run for ${runKey(r)}: ${e.message}`);
+                  console.log(`Failed to trigger re-run for ${runKey(r)}: ${e.message}`);
                 }
               }
-              if (fullRerunCount === 0) {
+              if (rerunCount === 0) {
                 console.error(`No eligible workflow runs to re-run. Skipped running=${skippedRunning}, skipped by conclusion=${skippedConclusion}.`);
               } else {
-                console.log(`Finished. Triggered full re-run for ${fullRerunCount} workflow run(s). Skipped running=${skippedRunning}, skipped by conclusion=${skippedConclusion}.`);
+                console.log(`Finished. Triggered re-run for ${rerunCount} workflow run(s). Skipped running=${skippedRunning}, skipped by conclusion=${skippedConclusion}.`);
               }
               return;
             }
