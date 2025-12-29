@@ -85,23 +85,17 @@ jobs:
             console.log(`PR branch='${prBranch}', headSha='${headSha}', author='${prUser}'`);
             console.log(`Command parsed => sub='${sub}', arg='${arg || ''}'`);
             // Fetch workflow runs in this repo triggered by this user on this branch, then filter by headSha
-            let page = 1;
-            const allRunsRaw = [];
-            while (true) {
-              const { data } = await github.rest.actions.listWorkflowRunsForRepo({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                actor: prUser,
-                branch: prBranch,
-                per_page: 100,
-                page
-              });
-              const wr = data.workflow_runs || [];
-              if (wr.length === 0) break;
-              allRunsRaw.push(...wr);
-              if (wr.length < 100) break;
-              page++;
-            }
+            const allRunsRaw = await github.paginate(
+            github.rest.actions.listWorkflowRunsForRepo,
+            {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              actor: prUser,
+              branch: prBranch,
+              per_page: 100,
+            },
+            (response) => response.data.workflow_runs
+            );
             const runsAtHead = allRunsRaw.filter(r => r.head_sha === headSha);
             if (runsAtHead.length === 0) {
               console.error(`No workflow runs found for head SHA ${headSha} on branch ${prBranch}.`);
