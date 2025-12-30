@@ -84,21 +84,34 @@ jobs:
             console.log(`pulsarbot handling PR #${prNum} ${prUrl}`);
             console.log(`PR branch='${prBranch}', headSha='${headSha}', author='${prUser}'`);
             console.log(`Command parsed => sub='${sub}', arg='${arg || ''}'`);
-            // Fetch workflow runs in this repo triggered by this user on this branch, then filter by headSha
-            const allRunsRaw = await github.paginate(
-            github.rest.actions.listWorkflowRunsForRepo,
-            {
+            // 最小验证：只取第一页，看看 API 到底返回了什么
+            const params = {
               owner: context.repo.owner,
               repo: context.repo.repo,
-              event: "pull_request",
-              per_page: 100,
-            },
-            (response) => response?.data?.workflow_runs ?? []
-            );
+              // 先不要加 event/actor/branch 任何过滤条件
+              per_page: 30,
+              page: 1,
+            };
 
-            const allRuns = allRunsRaw.filter(r => r && typeof r === "object");     
-            const runsAtHead = allRuns.filter(r => r.head_sha === headSha);
-            console.log(`allRunsRaw length=${allRunsRaw.length}, validRuns=${allRuns.length}`);
+            const { data } = await github.rest.actions.listWorkflowRunsForRepo(params);
+
+            console.log(`DEBUG listWorkflowRunsForRepo: total_count=${data.total_count}, returned=${(data.workflow_runs || []).length}`);
+
+            const sample = (data.workflow_runs || []).slice(0, 5).map(r => ({
+              id: r.id,
+              name: r.name,
+              event: r.event,
+              status: r.status,
+              conclusion: r.conclusion,
+              head_branch: r.head_branch,
+              head_sha: r.head_sha,
+              actor: r.actor?.login,
+            }));
+            console.log('DEBUG first 5 runs:', JSON.stringify(sample, null, 2));
+
+            // 先直接 return，避免后续逻辑干扰验证
+            return;
+
 
             if (runsAtHead.length === 0) {
               console.error(`No workflow runs found for head SHA ${headSha} on branch ${prBranch}.`);
