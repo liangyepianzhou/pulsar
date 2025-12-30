@@ -93,21 +93,17 @@ jobs:
               page: 1,
             };
 
-            const { data } = await github.rest.actions.listWorkflowRunsForRepo(params);
+            const { data } = await github.rest.actions.listWorkflowRunsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head_sha: headSha,
+              per_page: 50,
+            });
 
-            console.log(`DEBUG listWorkflowRunsForRepo: total_count=${data.total_count}, returned=${(data.workflow_runs || []).length}`);
-
-            const sample = (data.workflow_runs || []).slice(0, 5).map(r => ({
-              id: r.id,
-              name: r.name,
-              event: r.event,
-              status: r.status,
-              conclusion: r.conclusion,
-              head_branch: r.head_branch,
-              head_sha: r.head_sha,
-              actor: r.actor?.login,
-            }));
-            console.log('DEBUG first 5 runs:', JSON.stringify(sample, null, 2));
+            console.log(`DEBUG runs for head_sha=${headSha}: total_count=${data.total_count}, returned=${(data.workflow_runs||[]).length}`);
+            console.log(JSON.stringify((data.workflow_runs||[]).slice(0,10).map(r => ({
+              id: r.id, name: r.name, event: r.event, status: r.status, head_branch: r.head_branch, head_sha: r.head_sha
+            })), null, 2));
 
             // 先直接 return，避免后续逻辑干扰验证
             return;
