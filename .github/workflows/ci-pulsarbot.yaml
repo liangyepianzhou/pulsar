@@ -81,7 +81,7 @@ jobs:
               },
               (response) => response?.data?.workflow_runs ?? []
             );
-
+            console.log(`DEBUG runs for head_sha=${headSha}: total_count=${data.total_count}, returned=${(data.workflow_runs||[]).length}`);
             const runsAtHead = runsAtHeadRaw.filter(r => r && typeof r === 'object');
 
             console.log(`runsAtHead total=${runsAtHead.length} for head_sha=${headSha}`);
